@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Keep a Late Inventory Snapshot From Replacing a Newer One</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_9782.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>Keep a Late Inventory Snapshot From Replacing a Newer One</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2F18dsw3vbycdt34vzn048.png" alt="Keep a Late Inventory Snapshot From Replacing a Newer One" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2F18dsw3vbycdt34vzn048.png" alt="Keep a Late Inventory Snapshot From Replacing a Newer One" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>An inventory integration needs a rule for messages that arrive in a different order from the updates they represent. If revision 12 has already been accepted, a late delivery of revision 11 should not replace it merely because it arrived last.</p>
+<p>This runnable teaching example from YX Fulfillment models that decision for one authoritative inventory stream. It is not a description of the company's production system or a claim about any particular platform's API.</p>
+<p>In this example, each warehouse-and-SKU pair has a monotonically increasing revision assigned by its authoritative source. The quantity is an already defined available-to-sell value from that source. The example does not calculate it from physical stock or reservations.</p>
+<p>Those are input contracts. If the source does not provide an ordered revision with this scope, adding a local arrival counter will not create one. Two independent systems with unrelated counters also cannot be combined by simply comparing their integers.</p>
+<p>Save the following as inventory-revision-demo.cjs and run node inventory-revision-demo.cjs. It uses the Node.js strict assertion API to check the outcomes.</p>
+<p>The same-revision conflict deserves its own outcome. Silently treating different quantities as interchangeable would conceal an inconsistent source record. The test also accepts zero as a valid quantity and keeps another warehouse's stream separate.</p>
+<p>The map makes the decision visible in a small process. It does not persist state, coordinate workers, authenticate a source or update a store.</p>
+<p>In a durable implementation, make the conditional revision comparison and state write atomic. Reading the revision and later performing an unconditional write permits two workers to undo the intended ordering rule. A restart must also recover the last accepted revision, not just the quantity.</p>
+<p>If a separate worker sends accepted quantities to a storefront, test that boundary too. A correctly ordered local record does not establish that outbound updates will be applied in the same order. Check the destination's actual update contract and retain a record of what it accepted.</p>
+<p>For a warehouse connection, agree which system owns the quantity, what its revision means, what resets or migrations do to that sequence and how conflicts reach an operator. Then test a newer snapshot arriving first, a delayed older one, a repeated one and a same-revision conflict. The acceptance result should explain why the stored quantity is still the right one.</p>
+<p>Comparing inventory records at a workstation. Illustrative scene.</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/tom_8d160ea57bf5c0395981d/keep-a-late-inventory-snapshot-from-replacing-a-newer-one-1j89" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        

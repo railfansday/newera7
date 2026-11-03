@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Every VRAM dial on a 4GB card, ranked by what it actually buys</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_9802.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>Every VRAM dial on a 4GB card, ranked by what it actually buys</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Fb3ot4yugwgzkll6jnd4t.png" alt="Every VRAM dial on a 4GB card, ranked by what it actually buys" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Fb3ot4yugwgzkll6jnd4t.png" alt="Every VRAM dial on a 4GB card, ranked by what it actually buys" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>Stable Diffusion 1.5 in fp32 on a GTX 1650 with 4GB. About 150 seconds per 512x768 image with model offload on. Every number below is measured on that card, not estimated, because on 4GB the difference between "fits" and "doesn't" is a few hundred MB.</p>
+<p>I can't give you absolute GB for each because I didn't isolate them cleanly; what I can tell you is the ranking is stable. Offload is the only one that turns a hard OOM into a working render. fp16 is the only one that costs nothing you can measure. Slicing and tiling are cheap insurance you leave on.</p>
+<p>The 150 seconds per 512x768 is the number to beat. That is the fp32-with-offload figure. I never got fp16 to render a piece I shipped.</p>
+<p>Cheapest first. Never touch offload until the three below it have failed.</p>
+<p>The command that tells you whether a change bought anything:</p>
+<p>Reset the peak counter between runs or you read the high-water mark from the last attempt:</p>
+<p>I run the render, then print the peak, then change exactly one knob and run it again. One knob per run. If you change two and it fits, you don't know which one earned it.</p>
+<p>VAE tiling. It costs nothing in wall-clock, so I assumed it was free and left it on. It is not free in quality. Tiled decode seams at tile boundaries. On a 512x768 render the seam runs through a flat region and you will not see it at thumbnail size.</p>
+<p>I saw it because I crop. A 1:1 crop at the tile boundary shows a visible discontinuity in gradient where the untiled decode is smooth. That crop is what made me stop trusting "no measurable cost" as "no cost." Wall-clock and VRAM are easy to log. Quality is not, so it needs its own check, and cropping is the check.</p>
+<p>Rule I use now: tiling on for drafts, off for anything that goes on chain. If it OOMs with tiling off, fix the batch size, not the knob.</p>
+<p>The other thing I log is on-chain cost: about 0.0000008 ETH per piece to preload, mint price 0.00063 ETH on Base. I generated and pinned 77 pieces, minted 7, 70 still to mint, 5 per wallet. The test suite is around 271 tests, which is how I keep the render path stable while I change knobs.</p>
+<p>Takeaway: before you reach for offload, print peak VRAM after a single knob change and write the number down. If you didn't log it, you didn't measure it, and you'll be back on the same dial next week.</p>
+<p>Collection: https://thunderous-sunflower-a910b4.netlify.app</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/mujin/every-vram-dial-on-a-4gb-card-ranked-by-what-it-actually-buys-2k1j" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        

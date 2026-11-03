@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Workflow That Sent the Right Message to the Wrong Person: Row-to-Recipient Mapping in n8n</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_9784.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>The Workflow That Sent the Right Message to the Wrong Person: Row-to-Recipient Mapping in n8n</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Fxxzevk07qc0j1ziuwewc.png" alt="The Workflow That Sent the Right Message to the Wrong Person: Row-to-Recipient Mapping in n8n" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Fxxzevk07qc0j1ziuwewc.png" alt="The Workflow That Sent the Right Message to the Wrong Person: Row-to-Recipient Mapping in n8n" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>This is part of my build-in-public series on running LLM workflows in n8n in production. Everything here is a failure I actually watched happen, not a hypothetical.</p>
+<p>The scariest workflow failure I have seen did not throw an error, did not page anyone, and did not show up in any success metric. Every execution was green. Every message was well written, correctly formatted, and sent on time. The only problem was the recipient: the right message went to the wrong person. A follow-up meant for one lead went to another. A status update meant for one customer went to a different one. Nobody complained about a broken workflow, because from the outside nothing looked broken — until someone replied, confused, to a message that was never meant for them.</p>
+<p>A row-to-recipient mixup is worse than a crash for one reason: a crash stops the damage, a mixup completes it. The send already happened. You cannot unsend it, and the execution log will cheerfully tell you the step succeeded, because it did — it sent exactly what it was given, to exactly the address it was given. The bug was never in the send step. It was in the mapping step, one or two nodes earlier, where a row and a recipient stopped belonging to each other.</p>
+<p>First, filtering that reorders or drops rows without carrying the key. A loop filters a list, enriches the survivors, and then rejoins the results by position instead of by key. The moment one row is dropped in the middle, every row after it shifts by one, and every message after the gap goes to the next person's address. Position is not identity. The fix is boring and absolute: every item carries its business key — the lead id, the customer id, the order id — through every step, and any join or merge matches on that key, never on index.</p>
+<p>Second, joining on a key that is not unique. An enrichment step looks up a customer by name, or by company domain, or by email prefix, and gets back the first match. Two customers share a name, a domain matches a whole company, and the workflow picks one and never notices it picked wrong. A lookup that can return more than one row must either fail loudly on ambiguity or carry the ambiguity forward as a field the send step refuses to act on. "First match" is not a lookup strategy; it is a lottery with a send button attached.</p>
+<p>Third, stale enrichment cached across runs. A workflow enriches a row once, caches the result, and reuses it for later runs — and the underlying record changed in between. The contact changed jobs, the account changed owners, the email was reassigned. The cached enrichment is now a perfectly formatted lie. Enrichment that feeds a send must carry a freshness rule: how old the data may be, and what happens when it is too old — re-fetch, or stop. A send step should never act on enrichment older than the rule allows without saying so.</p>
+<p>The mapping rules above are necessary, but they are not sufficient, because they all live upstream of the send. The send step itself needs one last check, and it is the cheapest check in the whole workflow: before sending, assert that the recipient on the message matches the business key on the row, using an independent source. Not the enriched field that travelled with the row — the source of truth, looked up by key, at send time.</p>
+<p>Concretely, that means the send node receives two things that must agree: the row's key, and a recipient resolved from that key in the send step itself. If they disagree, the run stops and lands in review with both values attached: what the row claimed, and what the source of truth said. That review item is the difference between "we sent 200 messages, one was wrong" and "we sent 199 messages and caught the wrong one before it left." The first is an apology. The second is a Tuesday.</p>
+<p>The same assert protects against the quietest variant of all: a template that renders correctly for every row because it never references the recipient at all. A message that says "Hi there" instead of "Hi, Ana" will pass every content check and hide a mapping bug for weeks. Personalization is not decoration here; it is the canary. If the rendered message does not contain the expected recipient identifier, that is a signal, not a style choice — treat a missing personalization token as a failed assert, not a fallback to generic greeting.</p>
+<p>A mapping nobody has broken on purpose is a hope, not a guard. Before a workflow that sends to people goes live, I run it against a small dataset designed to break mapping, and assert three things: a dropped middle row does not shift the recipients after it, an ambiguous lookup stops instead of picking first, and a stale enrichment older than the freshness rule re-fetches or stops. If any of those three fails, the workflow does not send to real people yet — it sends to a test inbox until it passes.</p>
+<p>The rule I keep coming back to: a workflow that sends messages has two jobs, and only one of them is writing a good message. The other is proving, for every single send, that the person receiving it is the person the row was about. Get the first job wrong and you look sloppy. Get the second job wrong and you look untrustworthy, and trust is the one thing a send cannot buy back.</p>
+<p>Free workflows from this series (MIT): https://github.com/zhp910318/n8n-ai-automation-lab</p>
+<p>The production templates in my store: https://payhip.com/haopengailab</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/haopengai/the-workflow-that-sent-the-right-message-to-the-wrong-person-row-to-recipient-mapping-in-n8n-21fl" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        
