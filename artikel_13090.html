@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>5 Mistakes That Let a .NET AI Agent Burn Through 40 Tool Calls</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_13090.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>5 Mistakes That Let a .NET AI Agent Burn Through 40 Tool Calls</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2F9ypx71ntoogy1ccxztze.png" alt="5 Mistakes That Let a .NET AI Agent Burn Through 40 Tool Calls" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2F9ypx71ntoogy1ccxztze.png" alt="5 Mistakes That Let a .NET AI Agent Burn Through 40 Tool Calls" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>I thought I had a budget. I set tools on FunctionInvokingChatClient, shipped a support agent, and figured forty iterations was plenty of room for a sticky ticket. Then an offline replay of a bad day showed one chat message chewing through 41 model calls and 40 tool calls. Another scenario pushed past a million input tokens. A third issued two refunds for the same order.</p>
+<p>Nobody wrote a while (true). The framework did what it is documented to do. The mistakes were mine.</p>
+<p>This is not a full wiring tutorial. It is five mistakes I keep seeing (and made), with the shape of the fix for each. Stack: .NET 10 and Microsoft.Extensions.AI 10.11.0. Snippets are truncated on purpose; the trimmed parts are marked.</p>
+<p>Tech Skill Builder is $5/month for a very limited time only (normally $10). Grab it now before it goes back to $10. The complete, working, tested project behind this post (runaway-agent-guards-dotnet) is inside, with full source and an in-depth PDF guide. Join Tech Skill Builder</p>
+<p>MaximumIterationsPerRequest defaults to 40. That is a fuse against an infinite tool loop. It is not a token budget, a dollar budget, or a "stop when this is the same call again" policy.</p>
+<p>When the fuse blows, the client makes one more call with tools removed. A polite model writes text. A model that still emits a function call leaves an unanswered FunctionCallContent at the end of the history. response.Text can be empty. Nothing throws. Your API returns 200 with silence, and the trace looks fine until someone opens it.</p>
+<p>MaximumConsecutiveErrorsPerRequest defaults to 3. The fourth consecutive tool failure rethrows the tool's own exception. In the demo that is a TimeoutException whose message includes an internal hostname. So the "safety" path can also become a 500 that leaks infrastructure detail.</p>
+<p>Unguarded offline numbers from the project (demo prices $2.50 / $10 per million tokens):</p>
+<p>The Hoarder is the finance pager. Each tool result is a fat export. Every iteration resends the whole conversation, so input tokens grow roughly with the square of the step count. Forty calls, one request, seven figures of tokens.</p>
+<p>Fix shape: keep the framework cap as a backstop a couple of iterations above your limits, and put real budgets somewhere that can see every inner model round-trip. A 40 you never intended to hit is not a product decision.</p>
+<p>The first loop detector people write is if (call == lastCall). Models almost never repeat byte for byte. They retry "order 4012", then " ORDER 4012 ", then "order  4012", with keys shuffled and 25 becoming 25.0. Exact string equality calls that "progress."</p>
+<p>Fingerprint the call: tool name plus canonical arguments, then hash.</p>
+<p>Without that, your "identical call" counter never fires on the loops that actually happen in production.</p>
+<p>Even with fingerprints, "same call twice in a row" misses three other stuck shapes:</p>
+<p>The first two can be checked before the tool runs. The last two only after.</p>
+<p>Stopping hard on the first hit is often too sharp. The project nudges once: the tool is not executed; the model gets a GUARD: message as the tool result. The second time that rule fires for that call, the invoker sets Terminate = true and stops. A Listener-style model takes the hint and answers. A Stubborn one ignores it and gets cut off. Either way the nudge cost nothing.</p>
+<p>Budgets for model calls, tokens, cost, and wall clock have to see every model round-trip inside the tool loop. If you wrap the outer client, you see one request. The twelve inner calls are invisible, and your "12 model calls max" never trips until it is too late—or never trips at all.</p>
+<p>When the meter refuses, FunctionInvokingChatClient sees a response with no function calls and ends the loop on its own. No exception theatre.</p>
+<p>Demo defaults in the project: 12 model calls, 20 tool calls, 60k input tokens, $0.25, 90s. Check before you spend. A post-call counter stops you past the line; a pre-call check, plus a projected input size for the next context, stops the Hoarder around 73k input tokens (wrap-up included) instead of 1.06 million.</p>
+<p>Set MaximumIterationsPerRequest a couple above the guard. If that backstop ever fires, treat it as misconfiguration and detect the dangling unanswered function call.</p>
+<p>search can run twice. issue_refund should not. Unguarded DoubleRefund in the demo: the model calls issue_refund(order: "4012", amountEur: 25), then calls it again with the same arguments after a "client retry." Result: 2 refunds / 50 EUR.</p>
+<p>For a side-effecting tool, a repeat with the same fingerprint is not executed again. The guard returns the stored result of the first call so the model sees success and moves on. A failed side effect is never cached, so a real retry after an error still runs. This is per run only—you still want an idempotency key at the payment provider. The guard is the first line, not the last.</p>
+<p>Also: when a guard stops a run, make one final no-tools call (outside the loop budget) so the user gets a written answer instead of empty text or a stack trace. Strip unanswered function calls from history first; providers reject a call with no result.</p>
+<p>Model counts include the single wrap-up call.</p>
+<p>A fixed step cap still cannot tell a legitimate long task from a stuck one that varies its queries just enough. The full project goes further on that question; this post stops where the five mistakes above already save you from the 40-call default.</p>
+<p>Tech Skill Builder is $5/month for a very limited time only (normally $10). Grab it now before it goes back to $10. This project is already inside: runaway-agent-guards-dotnet — the full .NET 10 solution with the argument canonicalizer, loop detector, run budget, per-run guard, guarded function invoker, metering chat client, GuardedAgent, eight deterministic offline misbehaviours, a minimal API, a CLI demo, and a large offline test suite. Plus a long PDF guide that goes much deeper than this post. You also get the other complete, tested .NET + AI projects in the membership, with new ones added regularly.</p>
+<p>Which of these five is still true in your agent pipeline tonight?</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/michael_maurice/5-mistakes-that-let-a-net-ai-agent-burn-through-40-tool-calls-2jo3" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        

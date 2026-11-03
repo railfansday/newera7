@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>When You Cannot Prove Integrity, Rebuilding Becomes the Recovery Decision</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_13122.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>When You Cannot Prove Integrity, Rebuilding Becomes the Recovery Decision</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Ffkc7o6unhk3uimpn12jg.png" alt="When You Cannot Prove Integrity, Rebuilding Becomes the Recovery Decision" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Ffkc7o6unhk3uimpn12jg.png" alt="When You Cannot Prove Integrity, Rebuilding Becomes the Recovery Decision" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>Posted on Nov 3
+•
+Originally published at rack2cloud.com</p>
+<p>A recovery decision is only as defensible as the evidence you kept before the incident. On October 20 and 21, an attacker tried to exploit a critical GitLab vulnerability, CVE-2026-97229, on Alpine Linux's own GitLab server, a week after GitLab released the fix. Alpine found no evidence that the attacker's code ran, and said it could not rule it out. On October 27 it began rebuilding the server from scratch. The interesting part is not the rebuild. It is that the recovery decision came from a deficit, not a finding: Alpine could not obtain the evidence that would have let it keep the server.</p>
+<p>This post is not an advisory on GitLab, and it does not claim that Alpine was compromised or that it was not. Alpine says it found no evidence of compromise and could not rule one out. That distinction is the whole argument. When absence of evidence cannot be read as evidence of absence, what you decide is set by what you retained beforehand, and by whose records those are.</p>
+<p>The same incident, three answers: what outside records can attest, what only missing host-level records could have settled, and what Alpine's account leaves open.</p>
+<p>Alpine's account, published October 28 and updated October 30, is unusually specific. GitLab released its fix on October 12 (19.3.5 on the 19.3 branch Alpine ran). An attacker registered an account on Alpine's instance on October 20 and began probing. During the attack on October 20 and 21, Alpine says, GitLab worker processes crashed 8 times, and in 4 of those crashes the attacker got partway through the exploit before failing at the next step. Alpine then looked for signs of a successful run. Timing probes showed no delays, and it found no unexpected files, keys, hooks or processes.</p>
+<p>Those are negative checks. They support a conclusion; they cannot establish one, and Alpine's own reasoning says why: a successful exploit would leave no crash and no trace in the web logs. The crashes belong to the attempts that failed. An attempt that worked would look like silence.</p>
+<p>The records that could have closed the question were missing. Alpine says some logs from the attack day are gone, including background job logs and the old container's filesystem. It had no logging of outbound network connections, and its hosting provider keeps none either.</p>
+<p>Alpine's account does not establish when the missing attack-day logs became unavailable. Some of that evidence may have been lost during the response rather than through a retention decision made beforehand. The outbound-logging gap is different: Alpine had no outbound connection logging when the attack began.</p>
+<p>Alpine also reports that upgrading did not help as expected. In its account, the fix for this flaw is a Ruby patch that GitLab applies in its own official packages, and Alpine's image ran standard Ruby, so the October 22 upgrade to 19.3.6 did not close the hole. That is Alpine's explanation, and it is the only source this post relies on for it.</p>
+<p>Alpine's conclusion is narrow. It could not rule out code execution, and the evidence needed to confirm it no longer exists, so it rebuilt the instance from scratch. It closed GitLab to everyone except developers and build servers on October 27, finished the rebuild on October 28, reset all passwords, and replaced GitLab's secret keys.</p>
+<p>Most incident frameworks ask first whether the platform was compromised. Alpine could not answer that, and the reason was not skill or speed. The answer lives in records, and the records either existed before the incident or did not. Data protection architecture usually frames recovery as the question of whether you can restore. This is the question underneath it: whether you can establish what you would be restoring into.</p>
+<p>The Environment Re-Trust phase in Incident Recovery Process demands that an environment be confirmed clean, not assumed clean, before it is declared safe. Alpine shows the case that phase does not resolve: confirmation that cannot be produced. The outcome is not a degraded re-trust. It is a different recovery decision. Rebuilding stops being a response to a finding and becomes the defensible position when the evidence for keeping the platform is unobtainable.</p>
+<p>The outbound logging gap was in place before the attack began.</p>
+<p>Look at what would have answered the question. Whether anything left the host is a question for outbound connection logs. Whether the database was touched is a question for database connection logs. Alpine has announced both changes: it will record outbound connections from the GitLab host and database connections, and keep logs longer than 14 days. Those are announcements, not history. The outbound gap is established by Alpine's own account: it had no such logging. Whether earlier database-access records existed, the account does not say. This post does not claim that the logs would have changed the outcome. The claim is narrower: the outbound logging gap, in place before October 20, fixed one of the questions Alpine could not answer on October 27.</p>
+<p>The corollary is uncomfortable for any estate that runs a build or pipeline platform. CI/CD variables and runner tokens were among the things Alpine says could have been exposed had the attack succeeded, and in many environments the CI/CD system is the highest-privilege system in the estate. The rebuild-or-keep decision for that platform is being made now, in log retention and in what your provider keeps, whether or not anyone is treating it as a decision.</p>
+<p>The other half of the account is what Alpine could establish. Its verification worked because it used records the attacker could not reach. Alpine checked every aports commit added October 20 to 22 against a developer's clone and all 45 builders, and found that each arrived through a recorded push. It found that every package built from October 20 to 24 came from commits as published on git.alpinelinux.org. And it found that the October 21 stable releases (3.21.9, 3.22.7, 3.23.7 and 3.24.3), including their ISO images and minirootfs tarballs, came from commits it verified against records outside GitLab. It ran those checks on October 24.</p>
+<p>The developer's clone and the 45 builders are verification sources here, not exposed assets. They are records Alpine says the attacker could not reach, and that is the property that made them usable for verification. This post calls them outside records, in Alpine's phrase, and not independent records. Alpine's page does not say how the package record on git.alpinelinux.org is isolated from GitLab, and this post does not assume it.</p>
+<p>One question needed no record at all. Alpine states that the keys that sign its packages and releases are not, and never have been, stored on the GitLab server. That is an answer by design: a compromised GitLab could not have exposed keys it never held. It is also the firmest statement in the account, because it does not depend on any log surviving.</p>
+<p>Your Logs Are Not Evidence If The Infrastructure That Produces Them Can Rewrite The Record draws the underlying line: evidence produced by infrastructure inside the blast radius can be shaped by whoever holds it. Alpine's verification avoided that by looking elsewhere. But outside records have a limit the Alpine account makes visible. They can show that what the platform produced is intact. They cannot show what happened on the platform. Whether code ran on the host, and whether anything left it, are not questions a developer's clone can answer. Only host-side and network-side records can. Alpine had no outbound connection logging, and says the evidence it would need to confirm code execution no longer exists.</p>
+<p>Who may reject a recovery claim is the separate question that Framework #167, Recovery Evidence Boundary, owns, and that the Governance & Recovery Assurance stage of the learning path builds on. This post asks an earlier one: what has to exist before a recovery decision can rest on evidence at all.</p>
+<p>The table below turns the Alpine account into a recovery decision tool. It is this site's method, not Alpine's procedure. Each row is an integrity question you will be asked after an incident on a platform of this kind, the evidence that has to exist before the incident to answer it, and what its absence means. The Alpine column records Alpine's stated position as of its October 28 account and October 30 update.</p>
+<p>For the seventh row, Alpine lists six categories that could have been exposed had the attack succeeded: email addresses, names and IP addresses of all users; password hashes; 2FA secrets, CI/CD variables and runner tokens; webhook, integration and push mirror credentials; personal access tokens, stored as hashes; and private repositories along with confidential issues and merge requests. Alpine reset all passwords and replaced GitLab's secret keys. Replacing a set of secrets is a different job from enumerating it, and the second is the one that fails. Rotating Credentials Is Not Revoking Them. The Revocation Unit Decides Whether You Can. covers what one revoke action has to enclose.</p>
+<p>Read down the last column and a rule appears. Attest what outside records can establish. Rebuild when the integrity of the host cannot be established from obtainable evidence. Rows four to six demonstrate what can be verified through records outside the affected platform or through architectural separation. Rows one and two demonstrate the evidence gaps Alpine identified: successful execution could not be ruled out, and outbound connections could not be reconstructed. The scope of the recovery decision follows: the platform, not the artifacts it produced. Alpine's account is of a rebuilt platform and of releases it verified against outside records. Row three is a separate design requirement. Alpine announced database connection logging, but its account does not establish whether earlier database-access records existed. Do not turn that uncertainty into a finding.</p>
+<p>To use the table before an incident, fill the second and third columns first for every platform in the estate that holds credentials or builds what you ship. Where does the record live, who can reach or alter it, and how long is it retained compared with how long detection takes? Every row you cannot fill represents a recovery limitation you have already accepted. Some gaps will force a rebuild. Others will require credential replacement, exposure assessment, or a narrower attestation. The important thing is to know which recovery decision each missing record will force before the incident arrives: rebuild, attest, rotate, or investigate further.</p>
+<p>This post does not argue that Alpine was compromised, or that it was not. Alpine found no evidence either way and says so, and nothing here upgrades that. It does not argue for rebuilding every platform after an attempted exploit; rows four to six are the counter-example, cases where a platform's output can be attested without rebuilding anything, and the recovery decision is not always rebuild. It does not argue that better logging would have changed what Alpine decided. Its announced logging changes show where the deficit was, not what the logs would have found.</p>
+<p>A rebuild is also not a clean bill on its own. A rebuild can leave persistent access untouched in a layer the recovery never reached, which is why replacing secrets and verifying outputs belong inside the same decision as the rebuild.</p>
+<p>Alpine's decision is usually read as caution. It is better read as arithmetic. With the records that could answer it missing, the question of whether anything ran on the server had no obtainable answer, and a platform whose integrity cannot be established cannot be kept in service on hope. Rebuilding was the recovery decision that remained.</p>
+<p>The real problem is not the rebuild. A rebuild is expensive, but it is the one option that does not depend on evidence. The problem is that the recovery decision between rebuilding and attesting is made months earlier, in log retention settings, in what the hosting provider keeps, in whether the signing keys live on the platform at all. The quiet rows of the table, the signing keys and the outside copies, were settled by design, and they are the reason Alpine could say anything firm about its releases.</p>
+<p>You cannot establish an environment's integrity after an incident if you did not preserve the evidence for it beforehand. What you cannot establish, you rebuild. Retention is not a compliance chore attached to recovery. It is the input to the recovery decision, and by the time the incident arrives, that input is already fixed.</p>
+<p>Decide what you will need to prove, then keep the records that prove it somewhere an attacker controlling the platform cannot reach.</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/ntctech/when-you-cannot-prove-integrity-rebuilding-becomes-the-recovery-decision-4d9n" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        

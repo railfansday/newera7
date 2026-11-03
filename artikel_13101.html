@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Where do you put a referral program when everything it touches lives in the monolith?</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_13101.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>Where do you put a referral program when everything it touches lives in the monolith?</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2F1nb6w51asc1c7sy0xs9c.png" alt="Where do you put a referral program when everything it touches lives in the monolith?" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2F1nb6w51asc1c7sy0xs9c.png" alt="Where do you put a referral program when everything it touches lives in the monolith?" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>On October 22, I picked up a referral program halfway through. A first version applied the referral discount by writing it straight into the order line. I refused it. I wanted the discount to go through the voucher system we already have, and the referral to stay tracked.</p>
+<p>Some context. I run backend engineering at GoodBarber, an app platform, and our customers pay for their apps through a back office that is a PHP monolith. A referral program has to touch the coupon field at checkout, the payment confirmation, invoices and credit notes, vouchers, the credits we give apps, and renewals, which a cron of our older CMS creates. All of that lives in the monolith. The question was where the referral itself should live.</p>
+<p>Between 14:37 and 15:55 that day, I went around five answers.</p>
+<p>A new table in the shared database, with its model. The obvious answer, and the one I liked least. Our billing models are old, and I was afraid of adding one next to them and breaking something I wouldn't see break.</p>
+<p>The key/value table we already have. It stores attributes per user and per app, and already holds more than rights. The sponsor would get a referral_code row, the referee a referral row holding a small JSON state. No migration. What we'd lose is uniqueness in the database: it would become a SELECT ... FOR UPDATE on the sponsor's row during the reservation, to be proven under concurrency.</p>
+<p>A separate service with its own database, built like many of our Python services. The rules would be real constraints again, in a database of their own. But the monolith would still call it at three points: the page that shows the code, the checkout that reserves it, and an endpoint to grant rewards. Reserving a code would become a network call in the middle of the payment path. "One use only" would be split across two systems: the service reserves, the monolith applies the voucher, and if one of them fails, something has to undo the other. And it would be one more thing to deploy, host, monitor and back up, for the first version of a program.</p>
+<p>A signed code, with nothing stored up front. The code would carry the sponsor's app and a signature, and only its use would be stored. The code gets longer, and "which app gets the reward" becomes a computed rule.</p>
+<p>The voucher table we already had. The sponsor's code becomes a voucher. The referee types it at checkout like any promo code, and a cron checks how the code is used and grants the rewards. That one was my call, and it's the one we shipped.</p>
+<p>On the way there, I came back once to the first option with the word KISS and a warning about the model. The voucher table removed the question, since it needed neither a new table nor a migration.</p>
+<p>Most of the rules already had a column. The maximum number of uses is a field the voucher validation already counts. "First subscription only" is a flag the checkout already enforces. The sponsor's app is the voucher's owner. Each use is a row in the usage table, which switches to paid when the invoice is created. The cron only has to read paid uses that are old enough to be validated.</p>
+<p>When I asked a colleague to review the branch, it had seven commits on top of master: 17 files, 1,654 lines added, 14 removed, and no migration. The program went live on October 23.</p>
+<p>Its rules changed three times in the following days, and its texts four. Each rule change was a constant or a cron, plus the texts in twenty languages.</p>
+<p>The voucher table was never meant to tell one kind of voucher from another. Without a new column, the only thing that marks a referral code is its shape, and other code writes into that table too. A tenant guard in our ORM also had opinions about a code that belongs to one app and is used by another. Those are a separate post.</p>
+<p>The last time a small feature needed half of your monolith, where did you put it?</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>The engineering behind GoodBarber — a no-code builder shipping native iOS & Android apps since 2011, now agent-ready (MCP + 44 open-source Claude Skills), with an AI Extension Builder in beta.</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/goodbarber/where-do-you-put-a-referral-program-when-everything-it-touches-lives-in-the-monolith-4hd1" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        

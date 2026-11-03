@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Secure a Local LLM Relay Listening on *:4000</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_13120.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>How to Secure a Local LLM Relay Listening on *:4000</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Fmpresropo1axdvzxcx7k.png" alt="How to Secure a Local LLM Relay Listening on *:4000" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Fmpresropo1axdvzxcx7k.png" alt="How to Secure a Local LLM Relay Listening on *:4000" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>Posted on Nov 3
+•
+Originally published at forge.workstyle.tech</p>
+<p>📝 Originally published (in Japanese) at forge.workstyle.tech.</p>
+<p>TL;DR I ran a local LLM relay on my PC to use several providers through one model name. Port 4000 was listening on *:4000, so clients on the same LAN or Tailscale could reach it. The relay also used a placeholder default key that had appeared in my blog, so I restricted the listener to loopback and replaced the key.</p>
+<p>The local LLM relay was listening on port 4000 across all network interfaces (*:4000) and was using a placeholder default key published on the blog. I spotted this while checking for prompt injection (an attack that tries to hijack an AI by embedding instructions in external text), then restricted the listener to the loopback address (which routes connections back to the same PC) and rotated the key. The automatic approval system blocked the restart and the check with the new key, so I ran the commands myself.</p>
+<p>I asked an agent to review my setup for prompt injection vulnerabilities. A prompt is the set of instructions given to an AI. The review checked not only those instructions, but also the surrounding configuration and permissions.</p>
+<p>It uncovered a relay that was listening for connections. When I checked how it was started, I found that it was listening on all network interfaces. Anyone on the same LAN or Tailscale network could use the relay with that key. The key used to verify users was still set to a temporary default, and I had included it in a blog post.</p>
+<p>Once I put the value in my own writing, it was no longer secret. Removing it from the blog would not change the relay’s existing configuration. I needed to fix both the listening address and the key.</p>
+<p>The same review found a few other issues. Restrictions on an SSH key were not taking effect. A fallback process, called when the relay went down, still had permission to read files. Search results were being passed directly to the LLM.</p>
+<p>These issues all came up in the same review, but I’ll focus here on the relay and the fallback call. Listing every problem during an investigation can obscure what to fix first. I started by fixing who could connect to the relay.</p>
+<p>I updated the startup script to bind only to the loopback address. This fixed the relay listening on all network interfaces.</p>
+<p>Next, I replaced the key with one that is harder to guess. I stored it in a file readable only by the owner and updated the scripts to read it from there. I made the same change to a script that had the key hard-coded.</p>
+<p>I also reviewed what happens when the key cannot be found. Previously, a fallback path still used a default value; I removed it. I wanted to avoid falling back to a well-known default if the key could not be read.</p>
+<p>I kept dated backups of the files from before the changes. Afterward, I tried to verify that the relay worked with the new key, but got stuck at the final step.</p>
+<p>I asked the development agent to restart the relay and check whether requests worked with the new key. The agent tried to proceed, but the automatic approval system stopped it because the operation involved handling a secret.</p>
+<p>For a moment, I felt the work had stalled. The fix itself was done; all that remained was to restart the service and verify it. But that check involved an operation using a secret. The system couldn’t continue automatically—not because the steps were unclear.</p>
+<p>The agent showed me two commands to run manually:</p>
+<p>The first restarts the relay, and the second checks whether the port is listening. The label needs to match the actual environment. I ran the commands myself.</p>
+<p>As of 2026-10-17, lsof showed LISTEN on port 4000 at a loopback address. At least at the time I checked, it was not listening on all network interfaces. I also replaced the key and removed the path that fell back to a default value when the key was missing.</p>
+<p>When the relay went down, we used a separate LLM call as a last resort. An audit found that this process still had permission to read files. There was no reason to give a process handling relay failures access to files.</p>
+<p>I configured that call to receive no tools. I also made it run in an empty temporary directory without reading MCP (the mechanism for connecting external tools to an LLM) or configuration. Even when prompted to “read a file,” it returned no file contents.</p>
+<p>This confirms that it couldn’t read files within the scope of the audit. It doesn’t mean it can’t read anything under every possible circumstance. Still, we verified a way to reduce permissions to match the call’s purpose.</p>
+<p>I also changed how search results are handled. They’re now wrapped in <search_results>, with an instruction not to follow commands written inside. I also added a step to remove fake closing tags. Instead of passing search results through as-is, we now delimit their content and explicitly say not to treat it as instructions.</p>
+<p>In this task, I checked two things: where the relay was listening, and what permissions had been granted to the relay and the fallback call.</p>
+<p>Running locally doesn’t mean only local users can access it. If you don’t check where it’s listening, you might keep using it under the assumption that it’s “just for me,” as I did. And if a key has appeared in a blog post, there’s no reason to keep treating that value as secret.</p>
+<p>The post-fix check, however, still required a human action. The agent could show me the restart command, but the auto-approval system blocked a check using the new key. I didn’t try to bypass it; I treated the check as a step for a person to perform.</p>
+<p>The boundary for letting an AI agent handle secrets isn’t determined solely by whether it can automate the task from start to finish. For each task, you need to decide which permissions to grant and which actions a person must confirm. This time, a person performed the final step. Making that decision was part of fixing the local relay.</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/orca_forge/how-to-secure-a-local-llm-relay-listening-on-4000-3kdb" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        

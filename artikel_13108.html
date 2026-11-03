@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Past Google Apps Script&#x27;s 6-Minute Limit and n8n Out-of-Memory Crashes</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_13108.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>Getting Past Google Apps Script&#x27;s 6-Minute Limit and n8n Out-of-Memory Crashes</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Fe041bpt8ny4kebmuf56s.png" alt="Getting Past Google Apps Script&#x27;s 6-Minute Limit and n8n Out-of-Memory Crashes" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2Fe041bpt8ny4kebmuf56s.png" alt="Getting Past Google Apps Script's 6-Minute Limit and n8n Out-of-Memory Crashes" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>I build Google Sheets and Apps Script tools alongside small Python services, and I keep running into the same two walls as row counts grow.</p>
+<p>The first is the 03:06 AM Google Sheets failure email. An internal Google Apps Script that synced 400 orders or CRM leads in January now has 8,500 rows to process. Google kills the morning run halfway through with Exceeded maximum execution time. The script stops with half the spreadsheet updated, after firing duplicate API webhooks and breaking formulas.</p>
+<p>The second wall is a quiet n8n container restart on a 2 GB or 4 GB VPS. A self-hosted n8n workflow runs SplitInBatches over a 15,000-row CSV or Shopify catalog and dies with Exit Code 137 or FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory.</p>
+<p>Teams respond by renting more VPS RAM for n8n or splitting a Google Sheet across five tabs. Both workarounds buy a little breathing room while leaving the real bottlenecks intact: per-cell network round trips and growing execution state.</p>
+<p>Google's V8 Apps Script sandbox and n8n's Node.js worker fail in different places, though both punish row-by-row loops:</p>
+<p>In Apps Script, each getValue() or setValue() call crosses an internal network boundary to Google Sheets. At 80 to 150 ms a call, 3,000 setValue() writes eat most of your 6-minute budget on round trips alone.</p>
+<p>You can batch outbound HTTP traffic the same way. Pass an array of request objects to UrlFetchApp.fetchAll(requests) and Google runs those requests in parallel on its own infrastructure:</p>
+<p>Batched reads and writes hit the same 6-minute limit once a sheet holds 45,000 rows or calls a slow external ERP API that needs 25 minutes end to end. Checkpointing does not lift the daily quota either: a consumer account gets 20,000 UrlFetchApp calls per day (100,000 on Workspace), so a job that calls an API for every row of a 45,000-row sheet has to spread over more than one day on a consumer account.</p>
+<p>Do not wait until second 359 for Google to kill the script mid-write. Set a soft wall-clock budget of 270 seconds (4.5 minutes) and save cursor_row in PropertiesService.getScriptProperties() after each batch. Before exiting, clear old continuation triggers to prevent duplicate trigger storms, then schedule a single trigger to resume 60 seconds later:</p>
+<p>You also want a lock on doPost(e) webhook receivers. Wrap the write in const lock = LockService.getScriptLock(); lock.waitLock(15000); try { ... } finally { lock.releaseLock(); }. The overwrite happens when the handler computes its target row with getLastRow() + 1 and then calls setValues(): 5 Stripe or Shopify webhooks arriving in the same second can all read the same last row. The lock also covers any read-then-write logic, such as checking for a duplicate order ID before appending.</p>
+<p>A 2 GB self-hosted n8n instance can crash on a 12 MB JSON payload or a 5,000-row SplitInBatches loop because its execution engine snapshots output items at each node boundary. Those snapshots let the UI canvas render intermediate outputs and resolve expressions like $('Previous Node').item.json. Pass a 12 MB array through 8 transformation nodes in one execution and V8 ends up holding several serialized copies, eating hundreds of MB of heap.</p>
+<p>Keeping SplitInBatches inside one monolithic workflow compounds the problem. The parent execution holds onto previous batch iterations in its memory tree until the entire run finishes.</p>
+<p>In your docker-compose.yml or .env for self-hosted n8n, switch binary handling off default (RAM) if your workflows touch CSV exports, PDFs, audio files, or scraped HTML snapshots:</p>
+<p>Setting EXECUTIONS_DATA_SAVE_ON_SUCCESS=none on high-volume worker workflows stops n8n from serializing 100 MB JSON execution blobs into SQLite or Postgres at completion.</p>
+<p>Move those 12 enrichment and CRM nodes out of your parent SplitInBatches loop and split the work across two workflows:</p>
+<p>Once the child sub-workflow finishes and hands back that 32-byte summary, V8 can garbage-collect the child execution's intermediate data before batch #2 starts. The process holds one batch in memory at a time instead of growing with the total row count.</p>
+<p>n8n fits stateful orchestration and webhook routing, while 5,000-URL crawls and fuzzy CSV deduplication bog down its Node worker. Once a Code node in n8n passes 80 lines of nested loops or cheerio HTML parsing, I move that compute step into a stateless FastAPI (Python 3.11) container on the same Docker network, or call an Apify Actor over a webhook:</p>
+<p>These are expected behaviors from how each runtime manages limits; I did not benchmark the four setups side by side on a client system.</p>
+<p>If your Google Sheets scripts hit the 6-minute execution limit, or your n8n workflows drop webhooks and crash under load, you can reuse a few pieces instead of rebuilding from scratch.</p>
+<p>I published async Python hidden-API and automation starter templates on Gumroad as the free Python & Playwright Hidden-API Starter Kit Lite ($0+). The full 6-engine set with importable n8n and Apps Script blueprints is in the Pro Toolkit.</p>
+<p>To move B2B lead enrichment, Shopify or WooCommerce price monitoring, US healthcare clinic DSO screening, EU hospitality scraping, or 2-Opt TSP route optimization out of n8n RAM, you can call my 256 MB pay-per-event Actors on Apify Store (@thanh81646): https://apify.com/thanh81646.</p>
+<p>For a broken workflow or a custom pipeline, I refactor and build Python, Playwright, n8n, FastAPI, and Google Apps Script automations on small fixed-price milestones. My portfolio and contact info are at trungthanhtran.vercel.app.</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/tthanh2k6/getting-past-google-apps-scripts-6-minute-limit-and-n8n-out-of-memory-crashes-4964" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        

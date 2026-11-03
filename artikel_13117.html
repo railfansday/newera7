@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sources &amp; Credits on Every NewsFlow Brief: The Licence Behind the Summary</title>
+    <link rel="canonical" href="https://railfansday.github.io/newera3/artikel_13117.html">
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f9; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .btn-back { display: inline-block; margin-bottom: 20px; color: #0d6efd; text-decoration: none; }
+        .article-body img { max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="btn-back">&larr; Kembali ke Daftar Berita</a>
+        <h1>Sources &amp; Credits on Every NewsFlow Brief: The Licence Behind the Summary</h1>
+        <p style="color: #888; font-size: 14px;">Tanggal: 2026-11-03</p>
+        
+        <div class="article-body">
+            <img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2F0n64od7pb22x9uhpzge0.png" alt="Sources &amp; Credits on Every NewsFlow Brief: The Licence Behind the Summary" style="max-width:100%; height:auto; border-radius:8px;">
+            
+            <div style="text-align:center; margin-bottom:20px;"><img src="https://media2.dev.to/dynamic/image/width=1200,height=627,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.us-east-2.amazonaws.com%2Fuploads%2Farticles%2F0n64od7pb22x9uhpzge0.png" alt="Sources & Credits on Every NewsFlow Brief: The Licence Behind the Summary" style="max-width:100%; height:auto; border-radius:8px;" loading="lazy"></div>
+            <div class="article-body" style="font-size: 16px; line-height: 1.8; color: #333;">
+                <p>Every brief in NewsFlow links back to a licence. I did not take that from the marketing copy. I opened the "Sources & credits" panel on all seven stories sitting in today's inbox and read what it actually says, line by line.</p>
+<p>I work on OnePassApps, and NewsFlow is the hosted half of our product - the seven Studios run inside your browser tab, while briefs are prepared on our servers. This post is about the one part of NewsFlow that most tools skip entirely: the provenance panel behind every summary.</p>
+<p>Open NewsFlow and you get four tabs: Inbox, Queue, Saved and Sources, with a "Sign in to sync" button in the header. Today's Inbox read "7 new" and "7 stories available.", with source filters for Global Voices, Universe Today and the Electronic Frontier Foundation, and a line at the bottom reading "Showing stories published in the latest 24 hours."</p>
+<p>Open a story and there is a "Sources & credits" control. Press it and a dialog opens, titled "Sources & credits", containing four things in this order:</p>
+<p>That is the whole panel. There is no "powered by" line and no affiliate link - the licence badge is the payload.</p>
+<p>Here is what the panel said on all seven stories, grouped by the feed the story came from.</p>
+<p>Global Voices carried three of them - the Hong Kong rule of law piece by Oiwan Lam, the Brazil and Meta piece by Civic Media Observatory, and the Kosovo reporting piece by Nurbek Bekmurzaev. All three read:</p>
+<p>Selected text from the Global Voices feed by Oiwan Lam. Changes: shortened source text and, when played, synthetic speech. Global Voices does not endorse NewsFlow.</p>
+<p>with a badge reading "CC BY 3.0" pointing at the CC BY 3.0 deed.</p>
+<p>Universe Today carried three - the Vera Rubin dim satellites, the JWST black hole seeds and the Ryugu sample. Each read:</p>
+<p>Source: Universe Today · Evan Gough (https://www.universetoday.com/authors/ion23drive). Changes: selected feed text, source-based brief and synthetic narration. No affiliation or endorsement.</p>
+<p>The Electronic Frontier Foundation carried one, on Mada Masr:</p>
+<p>Source: Electronic Frontier Foundation · Jillian C. York. Changes: selected feed text, source-based brief and synthetic narration. No affiliation or endorsement.</p>
+<p>Three details are worth stopping on. First, the wording is not uniform, and the split is not along licence lines: Global Voices is CC BY 3.0 while Universe Today and EFF are CC BY 4.0, yet Global Voices gets the "Selected text from the ... feed by ..." phrasing and the other two get "Source: ... · ...". Second, the non-endorsement sentence is spelled out per feed rather than left implicit - "Global Voices does not endorse NewsFlow" on one side, "No affiliation or endorsement" on the other. Third, Universe Today is the only one of the three whose attribution line includes an author page URL.</p>
+<p>The "Changes:" clause is the part that does the real work. Creative Commons licences ask you to say whether you changed the material, and the panel answers that separately per feed, because the pipeline differs: Global Voices entries are shortened source text that gets read aloud, while the other two are selected feed text turned into a source-based brief with synthetic narration.</p>
+<p>A licence badge in a UI is only worth as much as the permission behind it, so I checked it against the terms of use at app.onepassapps.com/terms, which reads "Effective 21 October 2026 · Version 2026-10-21" and carries the source permissions in section 4.</p>
+<p>They line up. The terms say Global Voices original feed article text is available under CC BY 3.0, and that reviewed EFF and PLOS original feed article text, and Universe Today feed excerpts, are available under CC BY 4.0 - exactly the three licences the panel showed today. The terms also state that you keep ownership of content you provide, and that we get a limited, non-exclusive permission to host, process, copy and transmit it only as needed to provide the feature you asked for.</p>
+<p>The terms are also explicit about the other half of the bargain. Source-based briefs are prepared by MiniMax, but the request carries no account identity: "It does not include your account identity, reading history, queue, Sam conversations or private movie reviews in those requests." Listening runs on local Kokoro synthetic English speech by default. And the catalogue is deliberately narrow - "Only reviewed sources are processed." with "Sources without a suitable implemented permission route, including social posts, podcasts, videos and unreviewed custom feeds, are currently excluded."</p>
+<p>That last rule is why the panel only ever names three feeds today. The terms list more permissions than the app currently shows - arXiv under CC0, SciDev.Net excerpts under CC BY 3.0, OGL v3.0 for the historical GOV.UK feed, and a public-domain notice for historical Federal Reserve material - while noting that government agency feeds have been retired, NASA sources are retired, and TechCrunch entries are excluded from AI summaries and speech. I did not see an arXiv item in today's inbox, so I am not going to claim the app is serving one.</p>
+<p>Reading seven panels proves that each brief in today's inbox names its source, its licence and what was changed, and that the licences match what the terms say. It does not prove that any particular summary is faithful to the article underneath it - that is a judgement about the summary, not about the panel. It also does not prove the panel is present on every story the app has ever served; I checked the seven in today's inbox and the format held for all of them.</p>
+<p>The thing I would want a tool to do, and which NewsFlow does, is make the provenance a link rather than a promise. You can click through to the original article, you can click through to the exact licence deed, and the panel tells you in plain words what was changed. If a summary matters to you, that chain is short enough to check.</p>
+<p>NewsFlow is where the briefs live, and the app guides explain what each app does and what it will not do: NewsFlow and the guides.</p>
+<p>Templates let you quickly answer FAQs or store snippets for re-use.</p>
+<p>Are you sure you want to hide this comment? It will become hidden in your post, but will still be visible via the comment's permalink.</p>
+<p>For further actions, you may consider blocking this person and/or reporting abuse</p>
+<p>DEV Community — A space to discuss and keep up software development and manage your software career</p>
+<p>Built on Forem — the open source software that powers DEV and other inclusive communities.</p>
+<p>Made with love and Ruby on Rails. DEV Community © 2016 - 2026.</p>
+<p>We're a place where coders share, stay up-to-date and grow their careers.</p>
+                <p style="margin-top: 25px;">
+                    <a href="https://dev.to/onepassapps/sources-credits-on-every-newsflow-brief-the-licence-behind-the-summary-35ng" target="_blank" rel="nofollow noopener" style="color: #0d6efd; text-decoration: none; font-weight: bold;">
+                        &rarr; Baca artikel asli
+                    </a>
+                </p>
+            </div>
+            
+            
+<div style="text-align:center; margin:20px 0;">
+    <script type="text/javascript">
+        atOptions = {'key' : 'f9e40eb3b3cd05f1038aac7b36b33ad2','format' : 'iframe','height' : 90,'width' : 728,'params' : {}};
+    </script>
+    <script type="text/javascript" src="https://upholdbrilliancerecast.com/f9e40eb3b3cd05f1038aac7b36b33ad2/invoke.js"></script>
+</div>
+
+        </div>
+    </div>
+</body>
+</html>
+        
