@@ -11,13 +11,17 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
 # ==========================================================================
-# KONFIGURASI UTAMA (PORTABEL)
+# KONFIGURASI PATH (PORTABEL & LANGSUNG KE FOLDER UTAMA)
 # ==========================================================================
 BASE_DIR = Path(__file__).parent.resolve()
 DB_PATH = str(BASE_DIR / "database_hasil5" / "database.sqlite")
 RSS_FILE = str(BASE_DIR / "rss_list.txt")
-OUTPUT_DIR = str(BASE_DIR)
-BASE_URL = "https://railfansday.github.io/newera3" # ⚠️ SESUAIKAN NAMA REPO ANDA
+
+# ⚠️ PENTING: File HTML dan sitemap akan disimpan di folder utama (BASE_DIR)
+OUTPUT_DIR = str(BASE_DIR) 
+
+# ⚠️ GANTI DENGAN URL GITHUB PAGES ANDA
+BASE_URL = "https://railfansday.github.io/newera3" 
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -33,7 +37,7 @@ ADSTERRA_CODE = """
 """
 
 # ==========================================================================
-# BAGIAN 1: IMPORT (SCRAPING)
+# BAGIAN 1: FUNGSI IMPORT (SCRAPING)
 # ==========================================================================
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -42,22 +46,10 @@ def init_db():
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS artikel (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            link TEXT UNIQUE,
-            judul TEXT,
-            konten TEXT,
-            gambar TEXT,
-            kategori TEXT DEFAULT 'other',
-            tanggal_publish TEXT,
-            tanggal_update TEXT
+            link TEXT UNIQUE, judul TEXT, konten TEXT, gambar TEXT,
+            tanggal_publish TEXT, tanggal_update TEXT
         )
     """)
-    # Cek kolom baru
-    cursor.execute("PRAGMA table_info(artikel)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if 'gambar' not in columns: cursor.execute("ALTER TABLE artikel ADD COLUMN gambar TEXT")
-    if 'kategori' not in columns: cursor.execute("ALTER TABLE artikel ADD COLUMN kategori TEXT DEFAULT 'other'")
-    if 'tanggal_publish' not in columns: cursor.execute("ALTER TABLE artikel ADD COLUMN tanggal_publish TEXT")
-    if 'tanggal_update' not in columns: cursor.execute("ALTER TABLE artikel ADD COLUMN tanggal_update TEXT")
     conn.commit()
     conn.close()
 
@@ -68,8 +60,8 @@ def extract_full_content(url):
         soup = BeautifulSoup(response.text, 'html.parser')
 
         image_url = None
-        og_image = soup.find('meta', property='og:image') or soup.find('meta', attrs={'name': 'og:image'})
-        if og_image and og_image.get('content'): image_url = og_image['content']
+        og_image = soup.find('meta', property='og:image')
+        if og_image: image_url = og_image.get('content')
 
         paragraphs = soup.find_all('p')
         full_text = []
@@ -164,7 +156,7 @@ def jalankan_scraping():
 
 
 # ==========================================================================
-# BAGIAN 2: EXPORT (1 ARTIKEL = 1 FILE HTML)
+# BAGIAN 2: FUNGSI EXPORT (1 ARTIKEL = 1 FILE HTML)
 # ==========================================================================
 def esc(text):
     return html_mod.escape(str(text)) if text else ""
@@ -184,7 +176,7 @@ def jalankan_export_1_per_halaman():
         print("Tidak ada artikel.")
         return
 
-    print(f"[*] Membuat halaman HTML (1 artikel per file) untuk {len(rows)} artikel...")
+    print(f"[*] Membuat halaman HTML (1 artikel per file) di folder utama...")
 
     # 1. BUAT INDEX (Berisi daftar link ke semua artikel)
     index_html = f"""<!DOCTYPE html>
@@ -224,7 +216,6 @@ def jalankan_export_1_per_halaman():
     for item in rows:
         artikel_id, judul, konten, gambar, tanggal, link = item
         
-        # Cek gambar
         img_tag = f'<img src="{esc(gambar)}" alt="{esc(judul)}" style="max-width:100%; height:auto; border-radius:8px;">' if gambar else ""
         
         html_content = f"""<!DOCTYPE html>
@@ -257,20 +248,22 @@ def jalankan_export_1_per_halaman():
 </html>
         """
         
-        # Simpan file artikel
         filename = f"artikel_{artikel_id}.html"
         with open(os.path.join(OUTPUT_DIR, filename), "w", encoding="utf-8") as f:
             f.write(html_content)
 
-    # 3. BUAT SITEMAP
+    # 3. BUAT SITEMAP & ROBOTS
     with open(os.path.join(OUTPUT_DIR, "sitemap.xml"), "w", encoding="utf-8") as f:
         f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
         f.write(f'<url><loc>{BASE_URL}/</loc></url>\n')
         for item in rows:
             f.write(f'<url><loc>{BASE_URL}/artikel_{item[0]}.html</loc></url>\n')
         f.write('</urlset>')
+        
+    with open(os.path.join(OUTPUT_DIR, "robots.txt"), "w", encoding="utf-8") as f:
+        f.write(f"User-agent: *\nAllow: /\nSitemap: {BASE_URL}/sitemap.xml")
 
-    print(f"[SELESAI EXPORT] Total {len(rows)} file HTML artikel berhasil dibuat.")
+    print(f"[SELESAI EXPORT] Total {len(rows)} file HTML artikel berhasil dibuat di folder utama.")
 
 # ==========================================================================
 # JALANKAN SEMUANYA
